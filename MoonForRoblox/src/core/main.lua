@@ -11,6 +11,11 @@
 --> Inits
 local Lol = Instance.new("ScreenGui", game:GetService"CoreGui")
 local hudFolder = Instance.new("Folder", Lol)
+--> Services
+local replicatedService = game:GetService'ReplicatedStorage'
+local CollService = game:GetService'CollectionService'
+local ts = game:GetService'TweenService'
+local runService = game:GetService'RunService'
 --> Fetches
 local HUD_IMPORT_OBJECT = game:GetObjects"rbxassetid://12176692693"[1]
 local Followers = game:GetObjects"rbxassetid://14289122777"[1]
@@ -23,11 +28,7 @@ local LocalEntity = game.Players.LocalPlayer
 local client = require(replicatedService.TS.remotes).default.Client
 local KnitClient = debug.getupvalue(require(LocalEntity.PlayerScripts.TS.knit).setup, 6)
 local circleDebounce = false
---> Services
-local replicatedService = game:GetService'ReplicatedStorage'
-local CollService = game:GetService'CollectionService'
-local ts = game:GetService'TweenService'
-local runService = game:GetService'RunService'
+
 --> Extra
 local supportFrame = game:GetObjects"rbxassetid://13119197703"[1]
 local getmoonasset = function(asset) return ((syn and getsynasset) or getcustomasset)(asset) end
