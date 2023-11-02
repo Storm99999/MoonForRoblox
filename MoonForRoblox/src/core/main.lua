@@ -11,11 +11,6 @@
 --> Inits
 local Lol = Instance.new("ScreenGui", game:GetService"CoreGui")
 local hudFolder = Instance.new("Folder", Lol)
---> Services
-local replicatedService = game:GetService'ReplicatedStorage'
-local CollService = game:GetService'CollectionService'
-local ts = game:GetService'TweenService'
-local runService = game:GetService'RunService'
 --> Fetches
 local HUD_IMPORT_OBJECT = game:GetObjects"rbxassetid://12176692693"[1]
 local Followers = game:GetObjects"rbxassetid://14289122777"[1]
@@ -27,8 +22,12 @@ local antiVoidPosition = Vector3.zero
 local LocalEntity = game.Players.LocalPlayer
 local client = require(replicatedService.TS.remotes).default.Client
 local KnitClient = debug.getupvalue(require(LocalEntity.PlayerScripts.TS.knit).setup, 6)
-local circleDebounce = false
-
+local circleDebounce = false -- Jump Circles debounce, 0.3
+--> Services
+local replicatedService = game:GetService'ReplicatedStorage'
+local CollService = game:GetService'CollectionService'
+local ts = game:GetService'TweenService'
+local runService = game:GetService'RunService'
 --> Extra
 local supportFrame = game:GetObjects"rbxassetid://13119197703"[1]
 local getmoonasset = function(asset) return ((syn and getsynasset) or getcustomasset)(asset) end
@@ -91,7 +90,7 @@ local astolfoColors = {
     Color3.fromRGB(117, 241, 255)
 }
 local rightColor = 1
-local lastChange = tick()
+local lastChange = tick() -- is this ever fucking used?
 local function createSequence(args)
     local seq =
         CS.new(
@@ -363,7 +362,7 @@ task.spawn(
             local delta = (lastMousePos - UserInputService:GetMouseLocation())
             local xGoal = (startPos.X.Offset - delta.X)
             local yGoal = (startPos.Y.Offset - delta.Y)
-            lastGoalPos = UDim2.new(startPos.X.Scale, xGoal, startPos.Y.Scale, yGoal)
+            lastGoalPos = UDim2.new(startPos.X.Scale, xGoal, startPos.Y.Scale, yGoal) -- last
             gui.Position =
                 UDim2.new(
                 startPos.X.Scale,
@@ -650,41 +649,81 @@ task.spawn(
 
 task.spawn(function() local watermark = game:GetObjects"rbxassetid://14257314231"[1] watermark.Parent = watermarkGUI watermarks["novoline"] = watermark watermark.Visible = false end)
 
+local stored_remotes = {}
+local stored_modules = {}
+
+local function StoreRemotes()
+	for _,v in next, game:GetDescendants() do
+		if v:IsA('RemoteEvent') then
+			stored_remotes[v.Name == "" and "Invalid"..math.random() or v.Name] = v;
+		end
+
+		if v:IsA('ModuleScript') then
+			stored_modules[v.Name == "" and "Invalid"..math.random() or v.Name] = v;
+		end
+	end
+end
+
+function GetRemote(remote)
+	local succ, err = pcall(function()
+		return stored_remotes[remote];
+	end)
+
+	if succ then
+		return (stored_remotes[remote])
+	end
+
+	if err then
+		return error"[Moon @ GetRemote]: Remote was not found in stored_remotes, address: "..stored_remotes
+	end
+end
+
+function GetModule(module)
+	local succ, err = pcall(function()
+		return stored_modules[module];
+	end)
+
+	if succ then 
+		return (stored_modules[module])
+	end
+
+	if err then 
+		return error"[Moon @ GetModule]: Module ("..module.. ") was not found in stored_modules, address: "..stored_modudes
+	end
+end
 
 --> Module Fetching
 local Modules = {
     Sprint = require(
-        LocalEntity.PlayerScripts.TS.controllers["global"].sprint["sprint-controller"]
+        GetModule("sprint-controller")
     ).SprintController,
-    ItemHandle = debug.getupvalue(require(replicatedService.TS.item["item-meta"]).getItemMeta, 1),
+    ItemHandle = debug.getupvalue(require(GetModule("getItemMeta")), 1),
     BlockController2 = require(
-        replicatedService["rbxts_include"]["node_modules"]["@easy-games"]["block-engine"].out.client.placement[
-            "block-placer"
-        ]
+        GetModule("block-placer")
     ).BlockPlacer,
     BlockController = require(
-        replicatedService["rbxts_include"]["node_modules"]["@easy-games"]["block-engine"].out
+        GetModule("out")
     ).BlockEngine,
-    BlockEngine = require(LocalEntity.PlayerScripts.TS.lib["block-engine"]["client-block-engine"]).ClientBlockEngine,
+    BlockEngine = require(GetModule("ClientBlockEngine")),
     Shop = debug.getupvalue(
         debug.getupvalue(
-            require(game.ReplicatedStorage.TS.games.bedwars.shop["bedwars-shop"]).BedwarsShop.getShopItem,
+            require(GetModule("getShopItem")),
             1
         ),
         2
     ),
     Balloon = KnitClient.Controllers.BalloonController,
     Viewmodel = KnitClient.Controllers.ViewmodelController,
-    ReachRequire = require(replicatedService.TS.combat["combat-constant"]).CombatConstant,
-    InventoryUtil = require(replicatedService.TS.inventory["inventory-util"]).InventoryUtil,
+    ReachRequire = require(GetModule("combat-constant")).CombatConstant,
+    InventoryUtil = require(GetModule("inventory-util")).InventoryUtil,
     ItemTable = debug.getupvalue(require(game.ReplicatedStorage.TS.item["item-meta"]).getItemMeta, 1)
 }
 
 --> Remote Fetching
 local Remotes = {
-    AttackPacket = replicatedService.rbxts_include.node_modules:FindFirstChild("@rbxts").net.out._NetManaged.SwordHit,
+    AttackPacket = GetRemote("SwordHit"),
     Knockback = debug.getupvalue(
-        require(replicatedService.TS.damage["knockback-util"]).KnockbackUtil.calculateKnockbackVelocity,
+        require(GetModule("knockback-util")).KnockbackUtil.calculateKnockbackVelocity,
         1
     )
 }
@@ -757,9 +796,7 @@ function DestroyBed(part)
     local raycastResult = workspace:Raycast(part.Position + Vector3.new(0, 24, 0), Vector3.new(0, -27, 0), params)
     if raycastResult then
         local targetblock = raycastResult.Instance
-        replicatedService.rbxts_include.node_modules["@easy-games"]["block-engine"]["node_modules"][
-            "@rbxts"
-        ]["net"]["out"]["_NetManaged"].DamageBlock:InvokeServer(
+        GetRemote("DestroyBlock"):InvokeServer(
             {
                 ["blockRef"] = {
                     ["blockPosition"] = Vector3.new(
@@ -801,9 +838,13 @@ function StealChests()
     end
 end
 
+function printf(sector, message)
+	return warn"[Moon" .. (sector == nil and "" or sector) .. "]: " (message == nil and "Not specified" or message);
+end
+
 
 function getBlock()
-    local ItemTable = debug.getupvalue(require(game.ReplicatedStorage.TS.item["item-meta"]).getItemMeta, 1)
+    local ItemTable = Modules.ItemHandle -- saved module before, why did i do this?
     for _, v in next, GetInventory() do
         if ItemTable[v.itemType].block ~= nil then
             return v.itemType, v.amount
@@ -1465,7 +1506,8 @@ task.spawn(
                 Constant = "plrtp"
             }
         )
-
+		
+		-- patched but im not going to remove it lulz
         Exploits.MakeToggle(
             {
                 Name = "Dupe",
