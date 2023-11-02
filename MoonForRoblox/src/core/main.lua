@@ -692,6 +692,8 @@ function GetModule(module)
 	end
 end
 
+StoreRemotes()
+
 --> Module Fetching
 local Modules = {
     Sprint = require(
